@@ -60,6 +60,8 @@ nyt_dat %>%
   ggplot(aes(x = date_label, y = new_cases_per_100, color = county)) +
   geom_line(size = 1) +
   geom_point() +
-  theme_minimal() +
+  # theme_minimal() +
+  ylab("Weekly New Cases per 100") +
+  xlab("Date") +
   scale_color_brewer(palette = 6, type = "qual")
   
