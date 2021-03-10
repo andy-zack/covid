@@ -15,7 +15,6 @@ nyt_dat$pop[nyt_dat$county == "gunnison"] <- 6594
 nyt_dat$pop[nyt_dat$county == "delta"] <- 8920
 nyt_dat$pop[nyt_dat$county == "mesa"] <- 154210
 nyt_dat$pop[nyt_dat$county == "summit"] <- 31011
-nyt_dat$pop[nyt_dat$county == "lake"] <- 696535
 nyt_dat$pop[nyt_dat$county == "rio blanco"] <- 6336
 nyt_dat$pop[nyt_dat$county == "baltimore"] <- 827370
 nyt_dat$pop[nyt_dat$county == "middlesex"] <- 825062
@@ -24,7 +23,7 @@ nyt_dat$pop[nyt_dat$county == "san francisco"] <- 883305
 
 nyt_dat %>%
   filter(state == "colorado") %>%
-  filter(county %in% c("pitkin", "garfield", "eagle", "gunnison", "delta", "mesa", "summit", "lake", "rio blanco")) %>% 
+  filter(county %in% c("pitkin", "garfield", "eagle", "gunnison", "delta", "mesa", "summit", "rio blanco")) %>% 
   mutate(`cases per 100 people` = 100 * cases / pop) %>%
   ggplot(aes(x=date, y = `cases per 100 people`, color = county)) + 
   geom_line(size=.8) +
@@ -71,4 +70,15 @@ nyt_dat %>%
   ylab("Weekly New Cases per 100") +
   xlab("Date") +
   scale_color_brewer(palette = 6, type = "qual")
+
+nyt_dat %>%
+  filter(state %in% c("maryland", "colorado", "massachusetts", "district of columbia", "california")) %>%
+  filter(county %in% c("baltimore", "garfield", "middlesex", "district of columbia", "san francisco")) %>% 
+  group_by(county) %>%
+  mutate(new_cases = cases - lag(cases)) %>% 
+  mutate(adj_new_cases = new_cases / pop) %>%
+  filter(adj_new_cases >=0) %>%
+  ggplot(aes(x=date, y = adj_new_cases, color = county)) + 
+  geom_point(alpha = .1) + 
+  geom_smooth(span=.15, method = "loess", se = FALSE)
   
