@@ -2,6 +2,9 @@ library(tidyverse)
 library(here)
 library(lubridate)
 
+vaccines <- read_csv("https://raw.githubusercontent.com/BloombergGraphics/covid-vaccine-tracker-data/master/data/historical-usa-doses-administered.csv") %>%
+  filter(! id %in% c("new-york-city", "chicago"))
+
 nyt_dat <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv") %>%
   as_tibble() %>%
   mutate(county = tolower(county),
@@ -82,3 +85,26 @@ nyt_dat %>%
   geom_point(alpha = .1) + 
   geom_smooth(span=.15, method = "loess", se = FALSE)
   
+# make vaccines graph
+vaccine_plot_df <- vaccines %>%
+  group_by(date) %>%
+  summarise(cumulative_shots = sum(value)) %>%
+  arrange(date) %>%
+  mutate(daily_shots = cumulative_shots - lag(cumulative_shots, default = 0)) %>%
+  mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
+
+lm_fit <- lm(daily_shots ~ day_num, data = vaccine_plot_df)
+lm_slope <- coef(lm_fit)[[2]]
+lm_intercept <- coef(lm_fit)[[1]]
+
+est_df <- tibble(date = seq(max(vaccine_plot_df$date) +1, max(vaccine_plot_df$date) + 60, by="days")) %>%
+  mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
+
+vaccine_plot_df %>%
+  bind_rows(est_df) %>%
+  mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope)) %>%
+  ggplot(aes(x=date, y = cumulative_shots)) +
+  geom_point() +
+  geom_line(aes(y=my_est), color = "blue") +
+  scale_y_continuous(label = scales::comma_format()) +
+  theme_minimal()
