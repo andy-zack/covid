@@ -104,7 +104,7 @@ vaccine_plot_df %>%
   bind_rows(est_df) %>%
   mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope)) %>%
   ggplot(aes(x=date, y = cumulative_shots)) +
-  geom_point() +
+  geom_point(alpha = .4) +
   geom_line(aes(y=my_est), color = "blue") +
   scale_y_continuous(label = scales::comma_format()) +
   theme_minimal()
