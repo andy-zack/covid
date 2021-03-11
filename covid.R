@@ -72,6 +72,7 @@ nyt_dat %>%
   # theme_minimal() +
   ylab("Weekly New Cases per 100") +
   xlab("Date") +
+  theme_minimal() +
   scale_color_brewer(palette = 6, type = "qual")
 
 nyt_dat %>%
@@ -100,11 +101,16 @@ lm_intercept <- coef(lm_fit)[[1]]
 est_df <- tibble(date = seq(max(vaccine_plot_df$date) +1, max(vaccine_plot_df$date) + 60, by="days")) %>%
   mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
 
-vaccine_plot_df %>%
+vaccine_plot_df <- vaccine_plot_df %>%
   bind_rows(est_df) %>%
-  mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope)) %>%
+  mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope))
+
+vaccine_plot_df %>%
   ggplot(aes(x=date, y = cumulative_shots)) +
   geom_point(alpha = .4) +
   geom_line(aes(y=my_est), color = "blue") +
   scale_y_continuous(label = scales::comma_format()) +
-  theme_minimal()
+  theme_minimal() +
+  ylab("Cumulative Shots") +
+  xlab("") +
+  ggtitle(paste("50% adults on", vaccine_plot_df %>% filter(my_est > 200000000) %>% filter(row_number() == 1) %>% pull(date)))
