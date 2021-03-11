@@ -15,7 +15,6 @@ nyt_dat$pop[nyt_dat$county == "eagle"] <- 55127
 nyt_dat$pop[nyt_dat$county == "garfield"] <- 60061
 nyt_dat$pop[nyt_dat$county == "pitkin"] <- 17767
 nyt_dat$pop[nyt_dat$county == "gunnison"] <- 6594
-nyt_dat$pop[nyt_dat$county == "delta"] <- 8920
 nyt_dat$pop[nyt_dat$county == "mesa"] <- 154210
 nyt_dat$pop[nyt_dat$county == "summit"] <- 31011
 nyt_dat$pop[nyt_dat$county == "rio blanco"] <- 6336
@@ -26,7 +25,7 @@ nyt_dat$pop[nyt_dat$county == "san francisco"] <- 883305
 
 nyt_dat %>%
   filter(state == "colorado") %>%
-  filter(county %in% c("pitkin", "garfield", "eagle", "gunnison", "delta", "mesa", "summit", "rio blanco")) %>% 
+  filter(county %in% c("pitkin", "garfield", "eagle", "gunnison", "mesa", "summit", "rio blanco")) %>% 
   mutate(`cases per 100 people` = 100 * cases / pop) %>%
   ggplot(aes(x=date, y = `cases per 100 people`, color = county)) + 
   geom_line(size=.8) +
