@@ -86,26 +86,39 @@ nyt_dat %>%
   geom_smooth(span=.15, method = "loess", se = FALSE)
   
 # make vaccines graph
-vaccine_plot_df <- vaccines %>%
+vaccine_df <- vaccines %>%
   group_by(date) %>%
   summarise(cumulative_shots = sum(value)) %>%
   arrange(date) %>%
   mutate(daily_shots = cumulative_shots - lag(cumulative_shots, default = 0)) %>%
-  mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
+  mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days"))) %>%
+  filter(daily_shots >=0)
 
-lm_fit <- lm(daily_shots ~ day_num, data = vaccine_plot_df)
+vaccine_df <- vaccines %>% 
+  group_by(date) %>% 
+  summarise(cumulative_shots = sum(value)) %>% 
+  arrange(date) %>% 
+  mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days"))) %>% 
+  filter( cumulative_shots - lag(cumulative_shots) >0 | day_num ==1) %>% 
+  filter( cumulative_shots - lag(cumulative_shots) >0 | day_num ==1) %>% 
+  filter( cumulative_shots - lag(cumulative_shots) >0 | day_num ==1) %>% 
+  mutate(daily_shots = (cumulative_shots - lag(cumulative_shots)) / (day_num - lag(day_num)))
+
+lm_fit <- lm(daily_shots ~ day_num, data = vaccine_df[1:50,])
 lm_slope <- coef(lm_fit)[[2]]
 lm_intercept <- coef(lm_fit)[[1]]
 
-est_df <- tibble(date = seq(max(vaccine_plot_df$date) +1, max(vaccine_plot_df$date) + 60, by="days")) %>%
+est_df <- tibble(date = seq(max(vaccine_df$date) +1, max(vaccine_df$date) + 60, by="days")) %>%
   mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
 
-vaccine_plot_df <- vaccine_plot_df %>%
+vaccine_plot_df <- vaccine_df %>%
   bind_rows(est_df) %>%
+  mutate(daily_est = lm_intercept + (day_num * lm_slope)) %>%
   mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope))
 
 vaccine_plot_df %>%
   ggplot(aes(x=date, y = cumulative_shots)) +
+  geom_vline(color = "black", linetype="dotted", xintercept = vaccine_plot_df %>% filter(my_est > 200000000) %>% filter(row_number() == 1) %>% pull(date)) +
   geom_point(alpha = .4) +
   geom_line(aes(y=my_est), color = "blue") +
   scale_y_continuous(label = scales::comma_format()) +
@@ -113,3 +126,33 @@ vaccine_plot_df %>%
   ylab("Cumulative Shots") +
   xlab("") +
   ggtitle(paste("50% adults on", vaccine_plot_df %>% filter(my_est > 200000000) %>% filter(row_number() == 1) %>% pull(date)))
+
+dates <- rep(date("1990-01-01"), nrow(vaccine_df))
+for (i in 51:nrow(vaccine_df)) {
+  
+  lm_fit <- lm(daily_shots ~ day_num, data = vaccine_df[49:i,])
+  lm_slope <- coef(lm_fit)[[2]]
+  lm_intercept <- coef(lm_fit)[[1]]
+  
+  est_df <- tibble(date = seq(max(vaccine_df$date[50:i]) +1, max(vaccine_df$date[50:i]) + 160, by="days")) %>%
+    mutate(day_num = 1 + as.numeric(difftime(date, min(vaccines$date), units = "days")))
+  
+  date_2M <- vaccine_df[50:i,] %>%
+    bind_rows(est_df) %>%
+    mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope)) %>%
+    mutate(my_est = (day_num * lm_intercept) + (.5 *day_num * day_num * lm_slope)) %>%
+    filter(my_est > 200000000) %>% filter(row_number() == 1) %>% pull(date)
+  
+  dates <- c(dates, date_2M)
+}
+
+dates <- dates[dates != date("1990-01-01")]
+
+dates %>%
+  as_tibble() %>%
+  mutate(rn = row_number()) %>%
+  ggplot(aes(y=value, x = rn)) +
+  geom_line() +
+  theme_minimal() +
+  xlab("model run date") +
+  ylab("day we will hit 2M vaccines")
